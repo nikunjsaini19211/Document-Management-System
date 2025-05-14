@@ -3,6 +3,7 @@ from fastapi import UploadFile
 from sqlalchemy.orm import Session
 from app.models.document import Document
 from app.core.config import settings
+from app.schemas.document import DocumentUpdate
 
 class DocumentService:
     def __init__(self, db: Session):
@@ -42,6 +43,23 @@ class DocumentService:
 
     def get_document(self, document_id: int):
         return self.db.query(Document).filter(Document.id == document_id).first()
+
+    def update_document(self, document_id: int, update_data: DocumentUpdate) -> Document:
+        document = self.get_document(document_id)
+        if not document:
+            return None
+        
+        # Update only the fields that are provided
+        if update_data.title is not None:
+            document.title = update_data.title
+        if update_data.description is not None:
+            document.description = update_data.description
+        if update_data.file_type is not None:
+            document.file_type = update_data.file_type
+        
+        self.db.commit()
+        self.db.refresh(document)
+        return document
 
     def delete_document(self, document_id: int):
         document = self.db.query(Document).filter(Document.id == document_id).first()

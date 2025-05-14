@@ -11,6 +11,7 @@ A Python-based backend service for managing users and documents with role-based 
 - RESTful API design
 - PostgreSQL database integration
 - JWT-based authentication
+- Load testing capabilities
 
 ## API Endpoints
 
@@ -27,6 +28,17 @@ A Python-based backend service for managing users and documents with role-based 
   ```
 - `GET /api/documents/` - List all documents
 - `GET /api/documents/{document_id}` - Get a specific document
+- `PUT /api/documents/{document_id}` - Update document metadata (Admin/Editor only)
+  ```bash
+  curl -X PUT "http://localhost:8000/api/documents/1" \
+       -H "Authorization: Bearer $TOKEN" \
+       -H "Content-Type: application/json" \
+       -d '{
+         "title": "Updated Document",
+         "description": "This is an updated document",
+         "file_type": "pdf"
+       }'
+  ```
 - `DELETE /api/documents/{document_id}` - Delete a document
 
 ### User Management
@@ -110,6 +122,49 @@ curl -X POST "http://localhost:8000/api/documents/?title=Test%20Document&descrip
 curl -X GET "http://localhost:8000/api/documents/" \
      -H "Authorization: Bearer $TOKEN"
 ```
+
+5. Update a document:
+```bash
+curl -X PUT "http://localhost:8000/api/documents/1" \
+     -H "Authorization: Bearer $TOKEN" \
+     -H "Content-Type: application/json" \
+     -d '{
+       "title": "Updated Document",
+       "description": "This is an updated document",
+       "file_type": "pdf"
+     }'
+```
+
+## Load Testing
+
+The project includes load testing capabilities using Locust. To run load tests:
+
+1. Make sure the application is running:
+```bash
+docker-compose up -d
+```
+
+2. Run the load testing script:
+```bash
+./run_load_tests.sh
+```
+
+3. Open http://localhost:8089 in your browser to access the Locust web interface.
+
+4. Configure the test:
+   - Number of users to simulate
+   - Spawn rate (users per second)
+   - Host (http://localhost:8000)
+
+5. Start the test and monitor:
+   - Response times
+   - Request rates
+   - Error rates
+   - User behavior
+
+The load test simulates two types of users:
+- Regular users: Can perform basic document operations
+- Admin users: Can perform all operations including user management and ingestion
 
 ## Database Schema
 

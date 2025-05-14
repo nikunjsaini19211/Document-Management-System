@@ -10,6 +10,11 @@ class DocumentBase(BaseModel):
 class DocumentCreate(DocumentBase):
     pass
 
+class DocumentUpdate(BaseModel):
+    title: Optional[str] = None
+    description: Optional[str] = None
+    file_type: Optional[str] = None
+
 class DocumentResponse(DocumentBase):
     id: int
     file_path: str

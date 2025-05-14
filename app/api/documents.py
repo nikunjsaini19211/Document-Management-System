@@ -3,7 +3,7 @@ from sqlalchemy.orm import Session
 from typing import List
 from app.db.session import get_db
 from app.models.user import User, UserRole
-from app.schemas.document import DocumentResponse
+from app.schemas.document import DocumentResponse, DocumentUpdate
 from app.services.document import DocumentService
 from app.core.security import get_current_user
 
@@ -50,6 +50,23 @@ def get_document(
 ):
     document_service = DocumentService(db)
     document = document_service.get_document(document_id)
+    if not document:
+        raise HTTPException(status_code=404, detail="Document not found")
+    return document
+
+@router.put("/{document_id}", response_model=DocumentResponse)
+def update_document(
+    document_id: int,
+    update_data: DocumentUpdate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    # Authorization: only admins and editors
+    if current_user.role not in [UserRole.ADMIN, UserRole.EDITOR]:
+        raise HTTPException(status_code=403, detail="Not authorized to update documents")
+
+    document_service = DocumentService(db)
+    document = document_service.update_document(document_id, update_data)
     if not document:
         raise HTTPException(status_code=404, detail="Document not found")
     return document
