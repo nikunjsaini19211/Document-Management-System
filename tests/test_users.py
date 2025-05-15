@@ -30,4 +30,15 @@ def test_delete_user(authorized_client, test_user):
 
 def test_unauthorized_access(client):
     response = client.get("/api/users")
-    assert response.status_code == 401 
+    assert response.status_code == 401
+
+def test_get_user_by_id(authorized_client, test_user):
+    # Should succeed for existing user
+    response = authorized_client.get(f"/api/users/{test_user.id}")
+    assert response.status_code == 200
+    data = response.json()
+    assert data["id"] == test_user.id
+    assert data["email"] == test_user.email
+    # Should 404 for non-existent user
+    response = authorized_client.get("/api/users/999999")
+    assert response.status_code == 404 

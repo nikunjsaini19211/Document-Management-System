@@ -1,84 +1,176 @@
 # Document Management System
 
-A Python-based backend service for managing users and documents with role-based access control.
+A robust Python-based backend service for managing users and documents with role-based access control, document ingestion, and a modern RESTful API. Built with FastAPI, SQLAlchemy, and PostgreSQL.
+
+---
 
 ## Features
-
-- User authentication and authorization
-- Document management (CRUD operations)
+- User authentication and JWT-based authorization
 - Role-based access control (Admin, Editor, Viewer)
-- Document ingestion system
-- RESTful API design
+- Document CRUD operations with file upload
+- Document ingestion and logging
 - PostgreSQL database integration
-- JWT-based authentication
-- Load testing capabilities
+- Dockerized for easy deployment
+- Automated testing and load testing (Locust)
+
+---
+
+## Table of Contents
+- [API Endpoints](#api-endpoints)
+- [Environment Setup](#environment-setup)
+- [Running with Docker](#running-with-docker)
+- [Manual Local Setup](#manual-local-setup)
+- [Testing](#testing)
+- [Load Testing](#load-testing)
+- [Database Schema](#database-schema)
+- [Security](#security)
+- [Error Handling](#error-handling)
+- [Contributing](#contributing)
+- [License](#license)
+
+---
 
 ## API Endpoints
 
 ### Authentication
 - `POST /api/auth/register` - Register a new user
-- `POST /api/auth/login` - Login and get access token
+- `POST /api/auth/token` - Login and get access token (form data)
+- `GET /api/auth/me` - Get current user info
+- `POST /api/auth/logout` - Logout
+
+#### Register
+```bash
+curl -X POST "http://localhost:8000/api/auth/register" \
+  -H "Content-Type: application/json" \
+  -d '{"email":"user@example.com","password":"password123","full_name":"Test User", "role":"viewer"}'
+```
+#### Login
+```bash
+curl -X POST "http://localhost:8000/api/auth/token" \
+  -H "Content-Type: application/x-www-form-urlencoded" \
+  -d "username=user@example.com&password=password123"
+```
+#### Get Current User
+```bash
+curl -X GET "http://localhost:8000/api/auth/me" \
+  -H "Authorization: Bearer $TOKEN"
+```
+#### Logout
+```bash
+curl -X POST "http://localhost:8000/api/auth/logout" \
+  -H "Authorization: Bearer $TOKEN"
+```
+
+---
+
+### User Management (Admin only for some endpoints)
+- `GET /api/users/` - List all users (Admin only)
+- `GET /api/users/{user_id}` - Get user by ID (Admin only)
+- `PUT /api/users/{user_id}` - Update user info (Admin only)
+- `DELETE /api/users/{user_id}` - Delete user (Admin only)
+
+#### List Users
+```bash
+curl -X GET "http://localhost:8000/api/users/" \
+  -H "Authorization: Bearer $TOKEN"
+```
+#### Get User by ID
+```bash
+curl -X GET "http://localhost:8000/api/users/3" \
+  -H "Authorization: Bearer $TOKEN"
+```
+#### Update User
+```bash
+curl -X PUT "http://localhost:8000/api/users/1" \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"full_name": "Updated Name", "role": "editor"}'
+```
+#### Delete User
+```bash
+curl -X DELETE "http://localhost:8000/api/users/1" \
+  -H "Authorization: Bearer $TOKEN"
+```
+
+---
 
 ### Document Management
-- `POST /api/documents/` - Upload a new document
-  ```bash
-  curl -X POST "http://localhost:8000/api/documents/?title=Test%20Document&description=This%20is%20a%20test%20document&file_type=pdf" \
-       -H "Authorization: Bearer $TOKEN" \
-       -F "file=@test.pdf"
-  ```
+- `POST /api/documents/` - Upload a new document (Admin/Editor only)
 - `GET /api/documents/` - List all documents
 - `GET /api/documents/{document_id}` - Get a specific document
 - `PUT /api/documents/{document_id}` - Update document metadata (Admin/Editor only)
-  ```bash
-  curl -X PUT "http://localhost:8000/api/documents/1" \
-       -H "Authorization: Bearer $TOKEN" \
-       -H "Content-Type: application/json" \
-       -d '{
-         "title": "Updated Document",
-         "description": "This is an updated document",
-         "file_type": "pdf"
-       }'
-  ```
-- `DELETE /api/documents/{document_id}` - Delete a document
+- `DELETE /api/documents/{document_id}` - Delete a document (Admin only)
 
-### User Management
-- `GET /api/users/me` - Get current user information
-- `GET /api/users/` - List all users (Admin only)
-- `PUT /api/users/{user_id}` - Update user information (Admin only)
+#### Upload Document
+```bash
+curl -X POST "http://localhost:8000/api/documents/" \
+  -H "Authorization: Bearer $TOKEN" \
+  -F "file=@test.pdf" \
+  -F "title=Test Document" \
+  -F "description=This is a test document" \
+  -F "file_type=pdf"
+```
+#### List Documents
+```bash
+curl -X GET "http://localhost:8000/api/documents/" \
+  -H "Authorization: Bearer $TOKEN"
+```
+#### Get Document
+```bash
+curl -X GET "http://localhost:8000/api/documents/1" \
+  -H "Authorization: Bearer $TOKEN"
+```
+#### Update Document (metadata only)
+```bash
+curl -X PUT "http://localhost:8000/api/documents/1" \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"title": "Updated Document", "description": "Updated description", "file_type": "pdf"}'
+```
+#### Update Document (with file)
+```bash
+curl -X PUT "http://localhost:8000/api/documents/1" \
+  -H "Authorization: Bearer $TOKEN" \
+  -F "file=@updated.pdf" \
+  -F "title=Updated Document" \
+  -F "description=Updated description" \
+  -F "file_type=pdf"
+```
+#### Delete Document
+```bash
+curl -X DELETE "http://localhost:8000/api/documents/1" \
+  -H "Authorization: Bearer $TOKEN"
+```
+
+---
 
 ### Ingestion
-- `POST /api/ingestion/trigger` - Trigger document ingestion
-- `GET /api/ingestion/status` - Get ingestion status
+- `GET /api/ingestion/` - List all ingestion logs (Admin/Editor only)
+- `POST /api/ingestion/trigger` - Trigger document ingestion (Admin/Editor only)
+- `GET /api/ingestion/status` - Get ingestion status (Admin/Editor only)
 
-## Prerequisites
-
-- Docker and Docker Compose
-- Python 3.9+
-- PostgreSQL (if running locally)
-
-## Project Structure
-
-## Installation
-
-1. Clone the repository:
+#### List Ingestion Logs
 ```bash
-git clone <repository-url>
-cd document-management-system
+curl -X GET "http://localhost:8000/api/ingestion/" \
+  -H "Authorization: Bearer $TOKEN"
+```
+#### Trigger Ingestion
+```bash
+curl -X POST "http://localhost:8000/api/ingestion/trigger" \
+  -H "Authorization: Bearer $TOKEN"
+```
+#### Get Ingestion Status
+```bash
+curl -X GET "http://localhost:8000/api/ingestion/status" \
+  -H "Authorization: Bearer $TOKEN"
 ```
 
-2. Create a virtual environment:
-```bash
-python -m venv venv
-source venv/bin/activate  # On Windows: venv\Scripts\activate
-```
+---
 
-3. Install dependencies:
-```bash
-pip install -r requirements.txt
-```
+## Environment Setup
 
-4. Set up environment variables:
-Create a `.env` file in the root directory with the following variables:
+### .env Example
+Create a `.env` file in the project root:
 ```env
 POSTGRES_SERVER=db
 POSTGRES_USER=your_username
@@ -86,104 +178,102 @@ POSTGRES_PASSWORD=your_password
 POSTGRES_DB=your_database
 SECRET_KEY=your_secret_key
 ALGORITHM=HS256
-ACCESS_TOKEN_EXPIRE_MINUTES=30
+ACCESS_TOKEN_EXPIRE_MINUTES=10080
+CORS_ALLOWED_ORIGINS=http://localhost:4200,http://127.0.0.1:4200
 ```
 
-5. Start the application:
+---
+
+## Running with Docker
+
+1. **Build and start all services:**
 ```bash
-docker-compose up -d
+docker-compose up --build -d
 ```
-
-## Testing the API
-
-1. Register a new user:
+2. **Stop all services:**
 ```bash
-curl -X POST "http://localhost:8000/api/auth/register" \
-     -H "Content-Type: application/json" \
-     -d '{"email":"user@example.com","password":"password123","full_name":"Test User"}'
+docker-compose down
+```
+3. **View logs:**
+```bash
+docker-compose logs -f
+```
+4. **Access the API:**
+- FastAPI docs: [http://localhost:8000/docs](http://localhost:8000/docs)
+- Redoc: [http://localhost:8000/redoc](http://localhost:8000/redoc)
+
+---
+
+## Manual Local Setup (without Docker)
+
+1. **Install dependencies:**
+```bash
+python -m venv venv
+source venv/bin/activate
+pip install -r requirements.txt
+```
+2. **Start PostgreSQL** and create the database/tables (see `init.sql` for schema).
+3. **Set up your `.env` file** as above.
+4. **Run the app:**
+```bash
+uvicorn app.main:app --reload
 ```
 
-2. Login to get access token:
-```bash
-curl -X POST "http://localhost:8000/api/auth/login" \
-     -H "Content-Type: application/json" \
-     -d '{"username":"user@example.com","password":"password123"}'
-```
+---
 
-3. Upload a document:
-```bash
-curl -X POST "http://localhost:8000/api/documents/?title=Test%20Document&description=This%20is%20a%20test%20document&file_type=pdf" \
-     -H "Authorization: Bearer $TOKEN" \
-     -F "file=@test.pdf"
-```
+## Testing
 
-4. List documents:
+1. **Run all tests:**
 ```bash
-curl -X GET "http://localhost:8000/api/documents/" \
-     -H "Authorization: Bearer $TOKEN"
+./run_tests.sh all
 ```
+2. **Run a specific test file:**
+```bash
+pytest tests/test_documents.py
+```
+3. **Generate a coverage report:**
+```bash
+pytest --cov=app --cov-report=html
+```
+4. **View coverage report:**
+Open `htmlcov/index.html` in your browser.
 
-5. Update a document:
-```bash
-curl -X PUT "http://localhost:8000/api/documents/1" \
-     -H "Authorization: Bearer $TOKEN" \
-     -H "Content-Type: application/json" \
-     -d '{
-       "title": "Updated Document",
-       "description": "This is an updated document",
-       "file_type": "pdf"
-     }'
-```
+---
 
 ## Load Testing
 
-The project includes load testing capabilities using Locust. To run load tests:
-
-1. Make sure the application is running:
+1. **Start the app:**
 ```bash
 docker-compose up -d
 ```
-
-2. Run the load testing script:
+2. **Run load tests:**
 ```bash
 ./run_load_tests.sh
 ```
+3. **Open Locust UI:**
+[http://localhost:8089](http://localhost:8089)
 
-3. Open http://localhost:8089 in your browser to access the Locust web interface.
-
-4. Configure the test:
-   - Number of users to simulate
-   - Spawn rate (users per second)
-   - Host (http://localhost:8000)
-
-5. Start the test and monitor:
-   - Response times
-   - Request rates
-   - Error rates
-   - User behavior
-
-The load test simulates two types of users:
-- Regular users: Can perform basic document operations
-- Admin users: Can perform all operations including user management and ingestion
+---
 
 ## Database Schema
 
-The system uses the following tables:
+- `users` - User accounts
+- `documents` - Document metadata and file info
+- `ingestion_logs` - Ingestion process logs
 
-1. `users` - Stores user information
-2. `documents` - Stores document metadata
-3. `ingestion_logs` - Tracks document ingestion status
+See `init.sql` for full schema.
 
-## Security Considerations
+---
 
-- All passwords are hashed using bcrypt
-- JWT tokens are used for authentication
-- Role-based access control is implemented
-- File uploads are validated and sanitized
+## Security
+- Passwords hashed with bcrypt
+- JWT authentication
+- Role-based access control
+- CORS configuration
+
+---
 
 ## Error Handling
-
-The API uses standard HTTP status codes:
 - 200: Success
 - 201: Created
 - 400: Bad Request
@@ -192,18 +282,21 @@ The API uses standard HTTP status codes:
 - 404: Not Found
 - 500: Internal Server Error
 
-## Contributing
+---
 
+## Contributing
 1. Fork the repository
 2. Create a feature branch
 3. Commit your changes
-4. Push to the branch
-5. Create a Pull Request
+4. Push to your branch
+5. Open a Pull Request
+
+---
 
 ## License
+MIT License
 
-This project is licensed under the MIT License.
+---
 
 ## Support
-
-For support, please open an issue in the repository.
+For support, open an issue in the repository.

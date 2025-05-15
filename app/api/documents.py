@@ -1,6 +1,6 @@
-from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Form
+from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Form, Request
 from sqlalchemy.orm import Session
-from typing import List
+from typing import List, Optional
 from app.db.session import get_db
 from app.models.user import User, UserRole
 from app.schemas.document import DocumentResponse, DocumentUpdate
@@ -55,9 +55,13 @@ def get_document(
     return document
 
 @router.put("/{document_id}", response_model=DocumentResponse)
-def update_document(
+async def update_document(
     document_id: int,
-    update_data: DocumentUpdate,
+    request: Request,
+    title: Optional[str] = Form(None),
+    description: Optional[str] = Form(None),
+    file_type: Optional[str] = Form(None),
+    file: Optional[UploadFile] = File(None),
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
@@ -66,7 +70,30 @@ def update_document(
         raise HTTPException(status_code=403, detail="Not authorized to update documents")
 
     document_service = DocumentService(db)
-    document = document_service.update_document(document_id, update_data)
+    
+    # Check content type
+    content_type = request.headers.get("content-type", "")
+    if "application/json" in content_type:
+        # Handle JSON data
+        json_data = await request.json()
+        update_data = DocumentUpdate(**json_data)
+        document = document_service.update_document(
+            document_id,
+            title=update_data.title,
+            description=update_data.description,
+            file_type=update_data.file_type,
+            file=None
+        )
+    else:
+        # Handle form data
+        document = document_service.update_document(
+            document_id,
+            title=title,
+            description=description,
+            file_type=file_type,
+            file=file
+        )
+    
     if not document:
         raise HTTPException(status_code=404, detail="Document not found")
     return document

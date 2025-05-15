@@ -51,4 +51,17 @@ async def delete_user(
     success = user_service.delete_user(user_id)
     if not success:
         raise HTTPException(status_code=404, detail="User not found")
-    return {"message": "User deleted successfully"} 
+    return {"message": "User deleted successfully"}
+
+@router.get("/{user_id}", response_model=UserResponse)
+async def get_user_by_id(
+    user_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    if current_user.role != UserRole.ADMIN:
+        raise HTTPException(status_code=403, detail="Not authorized to view users")
+    user = db.query(User).filter(User.id == user_id).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    return user 

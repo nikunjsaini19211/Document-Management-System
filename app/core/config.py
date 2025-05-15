@@ -1,6 +1,7 @@
 from pydantic_settings import BaseSettings
 from typing import List
 import secrets
+import os
 
 class Settings(BaseSettings):
     PROJECT_NAME: str = "Document Management System"
@@ -16,7 +17,11 @@ class Settings(BaseSettings):
     SQLALCHEMY_DATABASE_URI: str = f"postgresql://{POSTGRES_USER}:{POSTGRES_PASSWORD}@{POSTGRES_SERVER}/{POSTGRES_DB}"
     
     # CORS
-    CORS_ORIGINS: List[str] = ["http://localhost:3000"]
+    CORS_ALLOWED_ORIGINS: str = "http://localhost:4200,http://127.0.0.1:4200"
+    
+    @property
+    def CORS_ORIGINS(self) -> List[str]:
+        return [origin.strip() for origin in self.CORS_ALLOWED_ORIGINS.split(",")]
     
     class Config:
         case_sensitive = True

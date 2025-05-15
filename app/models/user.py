@@ -1,7 +1,8 @@
-from sqlalchemy import Boolean, Column, Integer, String, Enum
+from sqlalchemy import Boolean, Column, Integer, String, Enum, DateTime
 from sqlalchemy.orm import relationship
 from app.db.base import Base
 import enum
+from datetime import datetime
 
 class UserRole(str, enum.Enum):
     ADMIN = "admin"
@@ -17,5 +18,7 @@ class User(Base):
     full_name = Column(String)
     role = Column(Enum(UserRole), default=UserRole.VIEWER)
     is_active = Column(Boolean, default=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     
     documents = relationship("Document", back_populates="owner") 
